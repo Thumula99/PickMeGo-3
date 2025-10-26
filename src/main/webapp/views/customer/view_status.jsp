@@ -1301,7 +1301,7 @@
 </script>
 
 <!-- Google Maps API with Places library -->
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIjP4YwT_snNdKDYrCTzXhGVrtuAJdac8&libraries=places,geocoding"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=----------------------8&libraries=places,geocoding"></script>
 
 <script>
     // Google Places API functionality for update form
