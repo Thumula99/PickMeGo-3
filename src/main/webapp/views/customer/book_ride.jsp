@@ -632,6 +632,6 @@
     });
 </script>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIjP4YwT_snNdKDYrCTzXhGVrtuAJdac8&callback=initMap&libraries=places,geocoding"></script>
+
 </body>
 </html>
