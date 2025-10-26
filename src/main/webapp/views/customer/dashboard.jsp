@@ -281,6 +281,142 @@
             margin-bottom: var(--spacing-md);
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
         }
+
+        /* Notices Section */
+        .notices-section {
+            margin: var(--spacing-xl) 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: var(--font-weight-bold, 700);
+            color: var(--black-dark);
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .section-title i {
+            color: var(--primary);
+        }
+
+        .notices-container {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+
+        .notice-card {
+            background: white;
+            border-radius: var(--radius-md, 12px);
+            padding: var(--spacing-lg);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .notice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .notice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .notice-title {
+            font-size: 1.1rem;
+            font-weight: var(--font-weight-bold, 700);
+            color: var(--black-dark);
+            margin: 0;
+        }
+
+        .notice-badges {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+
+        .notice-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: var(--font-weight-medium, 500);
+            text-transform: uppercase;
+        }
+
+        .notice-type-general {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .notice-type-maintenance {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .notice-type-service {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .notice-type-emergency {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .notice-priority-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .notice-priority-normal {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .notice-priority-high {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .notice-priority-critical {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .notice-message {
+            color: var(--ash-dark);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .notice-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--ash-medium);
+        }
+
+        .notice-date {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .notice-expiry {
+            font-style: italic;
+        }
+
+        .no-notices {
+            text-align: center;
+            color: var(--ash-medium);
+            font-style: italic;
+            padding: var(--spacing-xl);
+        }
     </style>
 </head>
 <body class="customer-theme">
@@ -314,6 +450,19 @@
             </div>
         </div>
 
+        <!-- Success Message -->
+        <%
+            String successMessage = (String) session.getAttribute("successMessage");
+            if (successMessage != null) {
+                session.removeAttribute("successMessage"); // Remove after displaying
+        %>
+        <div class="alert alert-success" style="margin: 20px 0; padding: 15px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
+            <i class="fas fa-check-circle"></i> <%= successMessage %>
+        </div>
+        <%
+            }
+        %>
+
         <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -331,6 +480,16 @@
             <div class="stat-card">
                 <div class="stat-number" id="total-spent">Rs. 0</div>
                 <div class="stat-label">Total Spent</div>
+            </div>
+        </div>
+
+        <!-- Notices Section -->
+        <div class="notices-section">
+            <h2 class="section-title">
+                <i class="fas fa-bullhorn"></i> Important Notices
+            </h2>
+            <div id="noticesContainer" class="notices-container">
+                <div class="loading">Loading notices...</div>
             </div>
         </div>
 
@@ -376,6 +535,16 @@
             </div>
         </div>
 
+        <!-- Offers -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-tags"></i> Available Offers</h3>
+            </div>
+            <div class="card-body" id="offers-container">
+                <div class="loading"><i class="fas fa-spinner"></i><p>Loading offers...</p></div>
+            </div>
+        </div>
+
         <!-- Notifications -->
         <div class="card">
             <div class="card-header">
@@ -389,6 +558,47 @@
                         <p>Loading notifications...</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Feedback: Create -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-comment-dots"></i> Leave Feedback</h3>
+            </div>
+            <div class="card-body">
+                <form id="feedbackForm" onsubmit="return submitFeedback(event)">
+                    <div class="input-group">
+                        <label for="fbTitle">Title</label>
+                        <input id="fbTitle" type="text" placeholder="Short title" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="fbContent">Feedback</label>
+                        <input id="fbContent" type="text" placeholder="Write your feedback" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="fbRating">Rating (1-5)</label>
+                        <select id="fbRating">
+                            <option value="">No rating</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="fas fa-paper-plane"></i> Submit</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Feedback: My submissions -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-comments"></i> My Feedback</h3>
+            </div>
+            <div class="card-body" id="myFeedbackContainer">
+                <div class="loading"><i class="fas fa-spinner"></i><p>Loading...</p></div>
             </div>
         </div>
 
@@ -482,13 +692,165 @@
         loadCustomerStats();
         loadRecentActivity();
         loadNotifications();
+        loadOffers();
+        loadMyFeedback();
         loadCurrentRide();
+    }
+
+    // Load notices for customers
+    function loadNotices() {
+        const container = document.getElementById('noticesContainer');
+        if (!container) return;
+        
+        container.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i><p>Loading notices...</p></div>';
+        
+        fetch(getContextPath() + '/CustomerServlet?action=getNotices')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(notices => {
+                console.log('Notices received:', notices);
+                displayNotices(notices);
+            })
+            .catch(error => {
+                console.error('Error loading notices:', error);
+                container.innerHTML = '<div class="no-notices">Unable to load notices at this time.</div>';
+            });
+    }
+    
+    function displayNotices(notices) {
+        const container = document.getElementById('noticesContainer');
+        if (!container) return;
+        
+        if (!notices || notices.length === 0) {
+            container.innerHTML = '<div class="no-notices">No notices at this time.</div>';
+            return;
+        }
+        
+        let noticesHTML = '';
+        notices.forEach(notice => {
+            const noticeId = notice.NoticeID || notice.noticeId;
+            const title = notice.Title || notice.title;
+            const message = notice.Message || notice.message;
+            const noticeType = notice.NoticeType || notice.noticeType;
+            const priority = notice.Priority || notice.priority;
+            const createdDate = notice.CreatedDate || notice.createdDate;
+            const expiryDate = notice.ExpiryDate || notice.expiryDate;
+            
+            const typeClass = 'notice-type-' + noticeType.toLowerCase();
+            const priorityClass = 'notice-priority-' + priority.toLowerCase();
+            
+            const createdDateStr = createdDate ? new Date(createdDate).toLocaleDateString() : 'N/A';
+            const expiryDateStr = expiryDate ? new Date(expiryDate).toLocaleDateString() : null;
+            
+            noticesHTML += '<div class="notice-card">';
+            noticesHTML += '<div class="notice-header">';
+            noticesHTML += '<h3 class="notice-title">' + title + '</h3>';
+            noticesHTML += '<div class="notice-badges">';
+            noticesHTML += '<span class="notice-badge ' + typeClass + '">' + noticeType + '</span>';
+            noticesHTML += '<span class="notice-badge ' + priorityClass + '">' + priority + '</span>';
+            noticesHTML += '</div>';
+            noticesHTML += '</div>';
+            noticesHTML += '<div class="notice-message">' + message + '</div>';
+            noticesHTML += '<div class="notice-footer">';
+            noticesHTML += '<div class="notice-date">';
+            noticesHTML += '<i class="fas fa-calendar"></i>';
+            noticesHTML += '<span>Posted: ' + createdDateStr + '</span>';
+            noticesHTML += '</div>';
+            if (expiryDateStr) {
+                noticesHTML += '<div class="notice-expiry">Expires: ' + expiryDateStr + '</div>';
+            }
+            noticesHTML += '</div>';
+            noticesHTML += '</div>';
+        });
+        
+        container.innerHTML = noticesHTML;
     }
 
     // Start the dashboard when page loads
     document.addEventListener('DOMContentLoaded', function() {
         initializeDashboard();
+        loadNotices(); // Load notices for customers
     });
+
+    function loadOffers(){
+        const el = document.getElementById('offers-container');
+        el.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i><p>Loading offers...</p></div>';
+        fetch(getContextPath() + '/OfferServlet')
+            .then(r=>r.json())
+            .then(list=>{
+                if(!list || list.length===0){
+                    el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No Offers</h3><p>There are no active offers right now.</p></div>';
+                    return;
+                }
+                let html = '';
+                list.forEach(o=>{
+                    html += '<div class="feature-card" style="margin-bottom:12px; padding:12px;">'
+                        + '<div class="card-header"><h3><i class="fas fa-badge-percent"></i> ' + (o.title||'Offer') + '</h3></div>'
+                        + '<div class="card-body">'
+                        + '<p>' + (o.description||'') + '</p>'
+                        + '<p><strong>Discount:</strong> ' + (o.discountType === 'PERCENT' ? (o.discountValue + '%') : ('LKR ' + o.discountValue)) + '</p>'
+                        + (o.vehicleType ? ('<p><strong>Vehicle:</strong> ' + o.vehicleType + '</p>') : '')
+                        + '</div>'
+                        + '</div>';
+                });
+                el.innerHTML = html;
+            })
+            .catch(()=>{
+                el.innerHTML = '<div class="empty-state"><i class="fas fa-triangle-exclamation"></i><h3>Error</h3><p>Failed to load offers.</p></div>';
+            });
+    }
+
+    // Feedback client functions
+    function submitFeedback(e){
+        e.preventDefault();
+        const body = new URLSearchParams({
+            action:'create',
+            title: document.getElementById('fbTitle').value,
+            content: document.getElementById('fbContent').value,
+            rating: document.getElementById('fbRating').value
+        });
+        fetch(getContextPath() + '/FeedbackServlet', { method:'POST', body })
+            .then(r=>r.json()).then(res=>{ if(res.success){
+                document.getElementById('feedbackForm').reset();
+                loadMyFeedback();
+                alert('Feedback submitted');
+            }});
+        return false;
+    }
+    function loadMyFeedback(){
+        const el = document.getElementById('myFeedbackContainer');
+        el.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i><p>Loading...</p></div>';
+        fetch(getContextPath() + '/FeedbackServlet?action=listMine')
+            .then(r=>r.json()).then(rows=>{
+                if(!rows || rows.length===0){ el.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>No Feedback</h3><p>You have not submitted any feedback yet.</p></div>'; return; }
+                let html = '<table class="data-table"><thead><tr><th>#</th><th>Title</th><th>Status</th><th>Rating</th><th>Reply</th><th></th></tr></thead><tbody>';
+                rows.forEach(f=>{
+                    html += '<tr>'+
+                        '<td>#'+f.id+'</td>'+
+                        '<td>'+escapeHtml(f.title||'')+'</td>'+
+                        '<td>'+escapeHtml(f.status||'')+'</td>'+
+                        '<td>'+(f.rating==null?'-':f.rating)+'</td>'+
+                        '<td>'+(f.reply?escapeHtml(f.reply):'-')+'</td>'+
+                        '<td><button class="btn btn-secondary" onclick="deleteFeedback('+f.id+')"><i class="fas fa-trash"></i></button></td>'+
+                    '</tr>';
+                });
+                html += '</tbody></table>';
+                el.innerHTML = html;
+            });
+    }
+    function deleteFeedback(id){
+        if(!confirm('Delete this feedback?')) return;
+        const body = new URLSearchParams({ action:'delete', id:String(id) });
+        fetch(getContextPath() + '/FeedbackServlet', { method:'POST', body })
+            .then(r=>r.json()).then(_=>loadMyFeedback());
+    }
+    function escapeHtml(s){
+        return String(s).replace(/[&<>\"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]); });
+    }
 </script>
 </body>
 </html>

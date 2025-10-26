@@ -280,6 +280,42 @@
             background-clip: text;
         }
         
+        .tip-section {
+            background: var(--ash-light);
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-lg) 0;
+            border: 1px solid var(--ash-medium);
+            border-left: 4px solid var(--secondary-accent);
+        }
+        
+        .tip-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tip-input-container input {
+            flex: 1;
+            padding-right: 50px;
+        }
+        
+        .tip-input-container .currency {
+            position: absolute;
+            right: 15px;
+            color: var(--ash-darker);
+            font-weight: var(--font-weight-semibold);
+            pointer-events: none;
+        }
+        
+        .tip-help {
+            display: block;
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-sm);
+            color: var(--ash-darker);
+            font-style: italic;
+        }
+        
         .loading {
             text-align: center;
             padding: var(--spacing-xl);
@@ -373,6 +409,17 @@
 
         <div id="price">LKR 0.00</div>
 
+        <div class="tip-section">
+            <div class="input-group">
+                <label for="tip-amount"><i class="fas fa-gift"></i> Tip for Driver (Optional)</label>
+                <div class="tip-input-container">
+                    <input type="number" id="tip-amount" name="tip" min="0" step="0.01" placeholder="0.00" value="0.00">
+                    <span class="currency">LKR</span>
+                </div>
+                <small class="tip-help">Show appreciation to your driver with a tip</small>
+            </div>
+        </div>
+
         <div class="action-buttons">
             <button class="btn btn-primary" id="calculate-btn">
                 <i class="fas fa-calculator"></i> Calculate Route
@@ -393,6 +440,7 @@
             <input type="hidden" id="tripDistance" name="distance">
             <input type="hidden" id="finalPrice" name="finalPrice">
             <input type="hidden" id="vehicleTypeHidden" name="vehicleType">
+            <input type="hidden" id="tipAmountHidden" name="tip">
 
             <button type="submit" class="btn btn-tertiary" id="book-btn" disabled>
                 <i class="fas fa-taxi"></i> Book Ride
@@ -425,12 +473,15 @@
     const tripDistanceEl = document.getElementById("tripDistance");
     const finalPriceInput = document.getElementById("finalPrice");
     const vehicleTypeHidden = document.getElementById("vehicleTypeHidden");
+    const tipAmountEl = document.getElementById("tip-amount");
+    const tipAmountHidden = document.getElementById("tipAmountHidden");
 
     const rates = {
         "Tuk Tuk": 50,
         "Car": 100,
         "Motorcycle": 30
     };
+    let activeOffers = [];
 
     function initMap() {
         directionsService = new google.maps.DirectionsService();
@@ -516,7 +567,22 @@
         const ratePerKm = rates[selectedVehicle];
 
         if (ratePerKm) {
-            const price = distanceKm * ratePerKm;
+            let price = distanceKm * ratePerKm;
+            // Apply best matching offer
+            if (activeOffers && activeOffers.length > 0) {
+                const matching = activeOffers.filter(o => !o.vehicleType || o.vehicleType === selectedVehicle);
+                if (matching.length > 0) {
+                    // choose the max discount for customer benefit
+                    let best = null, bestPrice = price;
+                    matching.forEach(o => {
+                        let discounted = price;
+                        if (o.discountType === 'PERCENT') discounted = price * (1 - (o.discountValue/100));
+                        else if (o.discountType === 'FIXED') discounted = Math.max(0, price - o.discountValue);
+                        if (discounted < bestPrice) { bestPrice = discounted; best = o; }
+                    });
+                    price = bestPrice;
+                }
+            }
             priceEl.textContent = "LKR " + price.toFixed(2);
             finalPriceInput.value = price.toFixed(2);
         } else {
@@ -524,6 +590,14 @@
             finalPriceInput.value = "0.00";
         }
     }
+
+    // Load active offers for pricing application
+    (function preloadOffers(){
+        fetch("${pageContext.request.contextPath}/OfferServlet")
+            .then(r=>r.json())
+            .then(list=>{ activeOffers = list || []; })
+            .catch(()=>{ activeOffers = []; });
+    })();
 
     function resetRoute() {
         directionsRenderer.setDirections({ routes: [] });
@@ -546,7 +620,16 @@
         tripDistanceEl.value = "";
         finalPriceInput.value = "";
         vehicleTypeHidden.value = "";
+        tipAmountEl.value = "0.00";
+        tipAmountHidden.value = "0.00";
     }
+    
+    // Add form submission handler to populate tip field
+    document.getElementById('booking-form').addEventListener('submit', function(e) {
+        // Populate the hidden tip field with the current tip amount
+        tipAmountHidden.value = tipAmountEl.value || "0.00";
+        console.log('Booking form submitted with tip:', tipAmountHidden.value);
+    });
 </script>
 
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIjP4YwT_snNdKDYrCTzXhGVrtuAJdac8&callback=initMap&libraries=places,geocoding"></script>

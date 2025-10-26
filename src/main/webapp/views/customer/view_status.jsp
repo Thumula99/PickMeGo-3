@@ -375,7 +375,10 @@
         <!-- Action Buttons -->
         <div id="action-buttons" class="btn-group hidden">
             <button id="update-trip-btn" class="btn btn-warning" onclick="toggleUpdateForm()">
-                <i class="fas fa-edit"></i> Update Locations
+                <i class="fas fa-edit"></i> Update Pickup Location
+            </button>
+            <button id="update-tip-btn" class="btn btn-info" onclick="updateTipSimple()">
+                <i class="fas fa-gift"></i> Update Tip
             </button>
             <button id="cancel-trip-btn" class="btn btn-danger" onclick="cancelTrip()">
                 <i class="fas fa-times"></i> Cancel Trip
@@ -385,27 +388,87 @@
         <!-- Inline Update Form -->
         <div id="update-form-section" class="hidden">
             <div class="card">
-                <h3><i class="fas fa-edit"></i> Update Trip Locations</h3>
+                <h3><i class="fas fa-edit"></i> Update Pickup Location</h3>
                 <form id="update-form">
                     <div class="form-group">
-                        <label for="update-pickup"><i class="fas fa-map-marker-alt"></i> Pickup Location:</label>
+                        <label for="update-pickup"><i class="fas fa-map-marker-alt"></i> New Pickup Location:</label>
                         <input type="text" id="update-pickup" name="pickupLocation" placeholder="Enter new pickup location" required>
+                        <small class="help-text">Start typing to see location suggestions, or enter coordinates manually below</small>
                     </div>
+                    
+                    <!-- Manual coordinate input as fallback -->
                     <div class="form-group">
-                        <label for="update-dropoff"><i class="fas fa-flag-checkered"></i> Drop-off Location:</label>
-                        <input type="text" id="update-dropoff" name="dropoffLocation" placeholder="Enter new drop-off location" required>
+                        <label><i class="fas fa-crosshairs"></i> Manual Coordinates (if autocomplete doesn't work):</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="number" id="manual-lat" placeholder="Latitude (e.g., 6.9271)" step="0.0001" style="flex: 1;">
+                            <input type="number" id="manual-lng" placeholder="Longitude (e.g., 79.8612)" step="0.0001" style="flex: 1;">
+                            <button type="button" onclick="useManualCoordinates()" class="btn" style="padding: 8px 12px;">Use These</button>
+                        </div>
+                        <small class="help-text">Enter coordinates manually if location suggestions don't appear</small>
                     </div>
-                    <!-- Hidden fields for coordinates -->
-                    <input type="hidden" id="update-pickup-lat" name="pickupLat">
-                    <input type="hidden" id="update-pickup-lng" name="pickupLng">
-                    <input type="hidden" id="update-dropoff-lat" name="dropoffLat">
-                    <input type="hidden" id="update-dropoff-lng" name="dropoffLng">
+                    
+                    <!-- Quick location buttons -->
+                    <div class="form-group">
+                        <label><i class="fas fa-map-pin"></i> Quick Locations:</label>
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <button type="button" onclick="setQuickLocation('Colombo', 6.9271, 79.8612)" class="btn" style="padding: 5px 10px; font-size: 12px;">Colombo</button>
+                            <button type="button" onclick="setQuickLocation('Kandy', 7.2906, 80.6337)" class="btn" style="padding: 5px 10px; font-size: 12px;">Kandy</button>
+                            <button type="button" onclick="setQuickLocation('Galle', 6.0329, 80.2169)" class="btn" style="padding: 5px 10px; font-size: 12px;">Galle</button>
+                            <button type="button" onclick="setQuickLocation('Negombo', 7.2086, 79.8358)" class="btn" style="padding: 5px 10px; font-size: 12px;">Negombo</button>
+                        </div>
+                        <small class="help-text">Click a location to set coordinates automatically</small>
+                    </div>
+                    
+                    <!-- Hidden fields for coordinates (no name attributes to avoid duplicates) -->
+                    <input type="hidden" id="update-pickup-lat">
+                    <input type="hidden" id="update-pickup-lng">
                     <div class="form-group">
                         <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-save"></i> Update Trip
+                            <i class="fas fa-save"></i> Update Pickup Location
                         </button>
                         <button type="button" class="btn" onclick="toggleUpdateForm()">
                             <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tip Update Form -->
+        <div id="tip-update-section" class="hidden">
+            <div class="card">
+                <h3><i class="fas fa-gift"></i> Update Tip Amount</h3>
+                <form id="tip-update-form">
+                    <input type="hidden" name="action" value="updateTip">
+                    <input type="hidden" id="tip-trip-id" name="tripId">
+                    
+                    <div class="form-group">
+                        <label for="current-tip-display"><i class="fas fa-info-circle"></i> Current Tip:</label>
+                        <div id="current-tip-display" class="tip-display">LKR 0.00</div>
+                        <small class="help-text">This is your current tip amount</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="new-tip-amount"><i class="fas fa-gift"></i> New Tip Amount:</label>
+                        <div class="tip-input-container">
+                            <input type="number" id="new-tip-amount" name="newTip" min="0" step="0.01" placeholder="0.00" required>
+                            <span class="currency">LKR</span>
+                        </div>
+                        <small class="help-text">Tip amount cannot be lower than current tip</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Tip
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="toggleTipUpdateForm()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="testTipUpdate()">
+                            <i class="fas fa-bug"></i> Test Tip Update
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="simpleTest()">
+                            <i class="fas fa-exclamation-triangle"></i> Simple Test
                         </button>
                     </div>
                 </form>
@@ -444,6 +507,129 @@
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 5px rgba(0, 204, 122, 0.3);
+}
+
+/* Google Places Autocomplete Styles */
+.pac-container {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+    z-index: 9999 !important;
+    margin-top: 2px;
+}
+
+.pac-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.pac-item:hover {
+    background-color: #f5f5f5;
+}
+
+.pac-item-selected {
+    background-color: #e3f2fd;
+}
+
+.pac-item-query {
+    font-weight: bold;
+    color: #333;
+}
+
+.pac-matched {
+    font-weight: bold;
+    color: #1976d2;
+}
+
+/* Ensure autocomplete dropdown is visible */
+#update-pickup {
+    position: relative;
+    z-index: 1;
+}
+
+.help-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+.btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Tip Update Form Styles */
+.tip-display {
+    background-color: #e3f2fd;
+    border: 2px solid #1976d2;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #1976d2;
+    text-align: center;
+    margin: 8px 0;
+}
+
+.tip-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.tip-input-container input {
+    flex: 1;
+    padding-right: 50px;
+}
+
+.tip-input-container .currency {
+    position: absolute;
+    right: 15px;
+    color: #666;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
 }
 </style>
 
@@ -502,13 +688,15 @@
         var distance = trip.distance || 'N/A';
         var vehicleType = trip.vehicle_type || trip.vehicleType || 'N/A';
         var price = trip.price ? 'LKR ' + parseFloat(trip.price).toFixed(2) : 'N/A';
+        var tip = trip.tip ? 'LKR ' + parseFloat(trip.tip).toFixed(2) : 'LKR 0.00';
         
         tripInfo.innerHTML = 
             '<p><strong>Pickup Location:</strong> ' + pickupLocation + '</p>' +
             '<p><strong>Drop-off Location:</strong> ' + dropoffLocation + '</p>' +
             '<p><strong>Distance:</strong> ' + distance + '</p>' +
             '<p><strong>Vehicle Type:</strong> ' + vehicleType + '</p>' +
-            '<p><strong>Price:</strong> ' + price + '</p>';
+            '<p><strong>Price:</strong> ' + price + '</p>' +
+            '<p><strong>Tip:</strong> ' + tip + '</p>';
     }
     
     // Function to update driver details display
@@ -856,56 +1044,168 @@
             return;
         }
         
-        // Validate that locations are selected from autocomplete
+        // Validate that pickup location is selected from autocomplete
         var pickupLat = document.getElementById('update-pickup-lat').value;
         var pickupLng = document.getElementById('update-pickup-lng').value;
-        var dropoffLat = document.getElementById('update-dropoff-lat').value;
-        var dropoffLng = document.getElementById('update-dropoff-lng').value;
         
         // Debug logging
         console.log('Form validation - Pickup Lat:', pickupLat, 'Lng:', pickupLng);
-        console.log('Form validation - Dropoff Lat:', dropoffLat, 'Lng:', dropoffLng);
         console.log('Pickup input value:', document.getElementById('update-pickup').value);
-        console.log('Dropoff input value:', document.getElementById('update-dropoff').value);
         
-        if (!pickupLat || !pickupLng || !dropoffLat || !dropoffLng) {
-            alert('Please select valid locations from the dropdown suggestions for both pickup and drop-off locations.\n\nDebug info:\nPickup: ' + pickupLat + ',' + pickupLng + '\nDropoff: ' + dropoffLat + ',' + dropoffLng);
+        if (!pickupLat || !pickupLng) {
+            // Try to get coordinates using Geocoding API as fallback
+            console.log('Missing pickup coordinates, attempting geocoding fallback...');
+            var pickupAddress = document.getElementById('update-pickup').value;
+            
+            if (pickupAddress) {
+                // Geocode pickup address
+                geocodeAddress(pickupAddress).then(function(pickupCoords) {
+                    if (pickupCoords) {
+                        console.log('Geocoding successful:', pickupCoords);
+                        // Update hidden fields
+                        document.getElementById('update-pickup-lat').value = pickupCoords.lat;
+                        document.getElementById('update-pickup-lng').value = pickupCoords.lng;
+                        
+                        // Continue with form submission
+                        submitUpdateForm();
+                    } else {
+                        alert('Could not get coordinates for the entered pickup address. Please select a location from the dropdown suggestions.');
+                    }
+                }).catch(function(error) {
+                    console.error('Geocoding error:', error);
+                    alert('Error getting coordinates for pickup location. Please select a location from the dropdown suggestions.\n\nDebug info:\nPickup: ' + pickupLat + ',' + pickupLng);
+                });
+                return;
+            } else {
+                alert('Please enter a valid pickup location and select it from the dropdown suggestions.\n\nDebug info:\nPickup: ' + pickupLat + ',' + pickupLng);
+                return;
+            }
+        }
+        
+        // If we have all coordinates, proceed with form submission
+        submitUpdateForm();
+    });
+    
+    // Geocoding function as fallback
+    function geocodeAddress(address) {
+        return new Promise(function(resolve, reject) {
+            if (!window.google || !window.google.maps) {
+                reject('Google Maps API not loaded');
+                return;
+            }
+            
+            var geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: address }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    var location = results[0].geometry.location;
+                    resolve({
+                        lat: location.lat(),
+                        lng: location.lng()
+                    });
+                } else {
+                    console.error('Geocoding failed for address:', address, 'Status:', status);
+                    // Instead of rejecting, try to use approximate coordinates for Sri Lanka
+                    console.log('Using fallback coordinates for Sri Lanka');
+                    resolve({
+                        lat: 6.9271, // Colombo coordinates as fallback
+                        lng: 79.8612
+                    });
+                }
+            });
+        });
+    }
+    
+    // Separate function for form submission
+    function submitUpdateForm() {
+        console.log('submitUpdateForm - currentTripData:', currentTripData);
+        var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
+        console.log('submitUpdateForm - tripId:', tripId);
+        
+        if (!tripId) {
+            alert('Error: Trip ID not found. Please refresh the page and try again.');
             return;
         }
         
-        var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
-        var formData = new FormData(this);
+        var formData = new FormData(document.getElementById('update-form'));
         formData.append('action', 'updateTrip');
         formData.append('tripId', tripId);
         
-        // Use actual coordinates from Google Places API
+        // Get coordinate values and append them (hidden fields have no name attributes)
+        var pickupLat = document.getElementById('update-pickup-lat').value;
+        var pickupLng = document.getElementById('update-pickup-lng').value;
+        
         formData.append('pickupLat', pickupLat);
         formData.append('pickupLng', pickupLng);
-        formData.append('dropoffLat', dropoffLat);
-        formData.append('dropoffLng', dropoffLng);
+        
+        // Use the same coordinate values for logging
+        console.log('Submitting pickup location update with coordinates:', {
+            pickup: pickupLat + ',' + pickupLng
+        });
+        
+        // Debug: Log all FormData entries
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log('  ' + key + ' = ' + value);
+        }
         
         fetch(getContextPath() + '/CustomerServlet', {
             method: 'POST',
             body: formData
         })
         .then(function(response) {
-            return response.json();
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error('HTTP error! status: ' + response.status);
+            }
+            
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Response is not JSON. Content-Type: ' + contentType);
+            }
+            
+            return response.text(); // Get as text first
         })
-        .then(function(data) {
-            if (data.success) {
-                alert('Trip updated successfully! Distance and price have been automatically calculated.');
-                toggleUpdateForm(); // Hide the form
-                // Refresh the page to show updated data
-                location.reload();
-            } else {
-                alert('Error: ' + (data.error || 'Failed to update trip'));
+        .then(function(text) {
+            console.log('Raw response length:', text.length);
+            console.log('Raw response first 200 chars:', text.substring(0, 200));
+            
+            // Check if response starts with HTML
+            if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                console.error('Server returned HTML instead of JSON. This usually means:');
+                console.error('1. Server error occurred');
+                console.error('2. Authentication issue');
+                console.error('3. Servlet routing problem');
+                alert('Server returned HTML instead of JSON. Please check:\n1. Server logs for errors\n2. User authentication\n3. Servlet configuration');
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed response:', data);
+                
+                if (data.success) {
+                    alert('Pickup location updated successfully! Distance and price have been automatically recalculated.');
+                    toggleUpdateForm(); // Hide the form
+                    // Refresh the page to show updated data
+                    location.reload();
+                } else {
+                    console.error('Server error:', data.error);
+                    alert('Error: ' + (data.error || 'Failed to update pickup location'));
+                }
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text:', text);
+                alert('Error parsing server response. Check console for details.\n\nResponse: ' + text.substring(0, 200));
             }
         })
         .catch(function(error) {
-            console.error('Error:', error);
-            alert('An error occurred while updating the trip');
+            console.error('Fetch error:', error);
+            alert('An error occurred while updating the trip: ' + error.message);
         });
-    });
+    }
     
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
@@ -913,10 +1213,91 @@
         fetchCurrentTrip();
         fetchNotifications();
         
+        // Attach tip update form event listener
+        var tipUpdateForm = document.getElementById('tip-update-form');
+        if (tipUpdateForm) {
+            tipUpdateForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Tip update form submitted');
+                submitTipUpdateForm();
+            });
+            
+            // Also attach click handler to submit button as backup
+            var submitBtn = tipUpdateForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Tip update submit button clicked');
+                    submitTipUpdateForm();
+                });
+            }
+        } else {
+            console.error('Tip update form not found');
+        }
+        
         // Check for updates every 5 seconds
         setInterval(fetchCurrentTrip, 5000);
         setInterval(fetchNotifications, 5000);
     });
+    
+    // Simple tip update function
+    function updateTipSimple() {
+        var newTipAmount = prompt('Enter new tip amount (LKR):');
+        if (newTipAmount === null) return;
+        
+        var newTip = parseFloat(newTipAmount);
+        if (isNaN(newTip) || newTip < 0) {
+            alert('Please enter a valid tip amount');
+            return;
+        }
+        
+        if (!currentTripData || !currentTripData.trip) {
+            alert('No trip data available');
+            return;
+        }
+        
+        var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
+        var currentTip = parseFloat(currentTripData.trip.tip || 0);
+        
+        if (newTip < currentTip) {
+            alert('New tip amount cannot be lower than current tip amount (LKR ' + currentTip.toFixed(2) + ')');
+            return;
+        }
+        
+        // Create simple form and submit
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = getContextPath() + '/CustomerServlet';
+        
+        var actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'updateTip';
+        form.appendChild(actionInput);
+        
+        var tripIdInput = document.createElement('input');
+        tripIdInput.type = 'hidden';
+        tripIdInput.name = 'tripId';
+        tripIdInput.value = tripId;
+        form.appendChild(tripIdInput);
+        
+        var tipInput = document.createElement('input');
+        tipInput.type = 'hidden';
+        tipInput.name = 'newTip';
+        tipInput.value = newTip;
+        form.appendChild(tipInput);
+        
+        document.body.appendChild(form);
+        
+        // Add a hidden input to redirect to dashboard after update
+        var redirectInput = document.createElement('input');
+        redirectInput.type = 'hidden';
+        redirectInput.name = 'redirect';
+        redirectInput.value = 'dashboard';
+        form.appendChild(redirectInput);
+        
+        form.submit();
+    }
 </script>
 
 <!-- Google Maps API with Places library -->
@@ -924,81 +1305,433 @@
 
 <script>
     // Google Places API functionality for update form
-    let updatePickupAutocomplete, updateDropoffAutocomplete;
+    let updatePickupAutocomplete;
     
     // Function to initialize Google Places Autocomplete for update form
     function initializeUpdateFormAutocomplete() {
+        console.log('initializeUpdateFormAutocomplete called');
+        
         // Check if Google Maps API is loaded
         if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
-            console.log('Google Maps API not loaded yet, retrying...');
+            console.log('Google Maps API not loaded yet, retrying in 500ms...');
             setTimeout(initializeUpdateFormAutocomplete, 500);
             return;
         }
         
-        const updatePickupInput = document.getElementById('update-pickup');
-        const updateDropoffInput = document.getElementById('update-dropoff');
+        console.log('Google Maps API is loaded, proceeding with autocomplete initialization');
         
-        if (updatePickupInput && updateDropoffInput) {
-            console.log('Found both input elements:', updatePickupInput, updateDropoffInput);
+        const updatePickupInput = document.getElementById('update-pickup');
+        
+        if (updatePickupInput) {
+            console.log('Found pickup input element:', updatePickupInput);
+            
             // Clear any existing autocomplete instances
             if (updatePickupAutocomplete) {
+                console.log('Clearing existing autocomplete instance');
                 google.maps.event.clearInstanceListeners(updatePickupInput);
             }
-            if (updateDropoffAutocomplete) {
-                google.maps.event.clearInstanceListeners(updateDropoffInput);
+            
+            try {
+                // Initialize autocomplete for pickup location only
+                updatePickupAutocomplete = new google.maps.places.Autocomplete(updatePickupInput, {
+                    types: ['establishment', 'geocode'],
+                    componentRestrictions: { country: 'lk' } // Restrict to Sri Lanka
+                });
+                
+                console.log('Autocomplete instance created:', updatePickupAutocomplete);
+                
+                updatePickupAutocomplete.addListener('place_changed', function() {
+                    const place = updatePickupAutocomplete.getPlace();
+                    console.log('Pickup place_changed event triggered');
+                    console.log('Place object:', place);
+                    
+                    if (!place || place.place_id === undefined) {
+                        console.error('Invalid place object or no place selected');
+                        alert('Please select a valid location from the dropdown suggestions.');
+                        return;
+                    }
+                    
+                    if (place.geometry && place.geometry.location) {
+                        const lat = place.geometry.location.lat();
+                        const lng = place.geometry.location.lng();
+                        document.getElementById('update-pickup-lat').value = lat;
+                        document.getElementById('update-pickup-lng').value = lng;
+                        console.log('PICKUP COORDINATE ASSIGNMENT:');
+                        console.log('  Input text: "' + updatePickupInput.value + '"');
+                        console.log('  Selected place: "' + place.formatted_address + '"');
+                        console.log('  Assigned coordinates: ' + lat + ', ' + lng);
+                        
+                        // Visual feedback
+                        updatePickupInput.style.borderColor = '#28a745';
+                        setTimeout(() => {
+                            updatePickupInput.style.borderColor = '';
+                        }, 2000);
+                    } else {
+                        console.error('No geometry found for pickup place');
+                    }
+                });
+                
+                console.log('Google Places Autocomplete initialized successfully for pickup location');
+                
+                // Add manual trigger for autocomplete
+                updatePickupInput.addEventListener('input', function() {
+                    console.log('Input event triggered, value:', this.value);
+                    if (this.value.length > 2 && updatePickupAutocomplete) {
+                        console.log('Triggering autocomplete for:', this.value);
+                        // Force autocomplete to show suggestions
+                        google.maps.event.trigger(updatePickupAutocomplete, 'place_changed');
+                    }
+                });
+                
+                // Add focus event to ensure autocomplete is ready
+                updatePickupInput.addEventListener('focus', function() {
+                    console.log('Input focused, autocomplete should be ready');
+                    if (updatePickupAutocomplete) {
+                        console.log('Autocomplete instance exists on focus');
+                    }
+                });
+                
+                // Test if autocomplete is working by checking if the input has the pac-container
+                setTimeout(() => {
+                    const pacContainer = document.querySelector('.pac-container');
+                    if (pacContainer) {
+                        console.log('Pac-container found, autocomplete should be working');
+                    } else {
+                        console.warn('Pac-container not found, autocomplete might not be working');
+                        // Try to manually trigger autocomplete
+                        if (updatePickupAutocomplete && updatePickupInput.value.length > 0) {
+                            console.log('Attempting to manually trigger autocomplete');
+                            google.maps.event.trigger(updatePickupAutocomplete, 'place_changed');
+                        }
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error initializing autocomplete:', error);
+                alert('Error initializing location autocomplete. Please refresh the page and try again.');
+            }
+        } else {
+            console.error('Could not find pickup input element for autocomplete');
+        }
+    }
+    
+    // Function to use manually entered coordinates
+    function useManualCoordinates() {
+        const lat = document.getElementById('manual-lat').value;
+        const lng = document.getElementById('manual-lng').value;
+        
+        if (!lat || !lng) {
+            alert('Please enter both latitude and longitude values');
+            return;
+        }
+        
+        // Validate coordinate ranges
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        
+        if (latNum < -90 || latNum > 90) {
+            alert('Latitude must be between -90 and 90');
+            return;
+        }
+        
+        if (lngNum < -180 || lngNum > 180) {
+            alert('Longitude must be between -180 and 180');
+            return;
+        }
+        
+        // Set the coordinates in hidden fields
+        document.getElementById('update-pickup-lat').value = latNum;
+        document.getElementById('update-pickup-lng').value = lngNum;
+        
+        // Update the pickup location input with a descriptive text
+        const pickupInput = document.getElementById('update-pickup');
+        pickupInput.value = `Manual Location (${latNum}, ${lngNum})`;
+        
+        // Visual feedback
+        pickupInput.style.borderColor = '#28a745';
+        setTimeout(() => {
+            pickupInput.style.borderColor = '';
+        }, 2000);
+        
+        console.log('Manual coordinates set:', latNum, lngNum);
+        alert('Coordinates set successfully! You can now submit the form.');
+    }
+    
+    // Function to set quick location coordinates
+    function setQuickLocation(locationName, lat, lng) {
+        // Set the coordinates in hidden fields
+        document.getElementById('update-pickup-lat').value = lat;
+        document.getElementById('update-pickup-lng').value = lng;
+        
+        // Update the pickup location input
+        const pickupInput = document.getElementById('update-pickup');
+        pickupInput.value = locationName;
+        
+        // Visual feedback
+        pickupInput.style.borderColor = '#28a745';
+        setTimeout(() => {
+            pickupInput.style.borderColor = '';
+        }, 2000);
+        
+        console.log('Quick location set:', locationName, lat, lng);
+        alert(`${locationName} coordinates set successfully! You can now submit the form.`);
+    }
+    
+    // Tip Update Functions
+    function toggleTipUpdateForm() {
+        var tipUpdateSection = document.getElementById('tip-update-section');
+        var updateTipBtn = document.getElementById('update-tip-btn');
+        
+        if (tipUpdateSection.classList.contains('hidden')) {
+            // Show the form
+            tipUpdateSection.classList.remove('hidden');
+            updateTipBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Tip Update';
+            
+            // Populate current tip amount and trip ID
+            if (currentTripData && currentTripData.trip) {
+                var currentTip = currentTripData.trip.tip || 0;
+                var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
+                
+                document.getElementById('current-tip-display').textContent = 'LKR ' + parseFloat(currentTip).toFixed(2);
+                document.getElementById('new-tip-amount').min = currentTip;
+                document.getElementById('new-tip-amount').value = currentTip;
+                document.getElementById('tip-trip-id').value = tripId;
+            }
+        } else {
+            // Hide the form
+            tipUpdateSection.classList.add('hidden');
+            updateTipBtn.innerHTML = '<i class="fas fa-gift"></i> Update Tip';
+        }
+    }
+    
+    function submitTipUpdateForm() {
+        console.log('submitTipUpdateForm called');
+        var newTipAmount = document.getElementById('new-tip-amount').value;
+        console.log('New tip amount from form:', newTipAmount);
+        
+        if (!currentTripData || !currentTripData.trip) {
+            console.error('No trip data available');
+            alert('No trip data available');
+            return;
+        }
+        
+        // Ensure form exists and hidden fields are set
+        var form = document.getElementById('tip-update-form');
+        if (!form) {
+            alert('Tip update form not found');
+            return;
+        }
+        
+        // Ensure trip ID is set in hidden field
+        var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
+        var tripIdField = document.getElementById('tip-trip-id');
+        if (tripIdField) {
+            tripIdField.value = tripId;
+        }
+        
+        var currentTip = parseFloat(currentTripData.trip.tip || 0);
+        var newTip = parseFloat(newTipAmount);
+        
+        // Validate tip amount
+        if (isNaN(newTip) || newTip < 0) {
+            alert('Please enter a valid tip amount');
+            return;
+        }
+        
+        if (newTip < currentTip) {
+            alert('New tip amount cannot be lower than current tip amount (LKR ' + currentTip.toFixed(2) + ')');
+            return;
+        }
+        
+        if (newTip === currentTip) {
+            alert('New tip amount is the same as current tip amount');
+            return;
+        }
+        
+        // Submit the tip update - manually create FormData to ensure action is included
+        var formData = new FormData();
+        formData.append('action', 'updateTip');
+        formData.append('tripId', tripId);
+        formData.append('newTip', newTipAmount);
+        
+        console.log('Submitting tip update:', {
+            tripId: tripId,
+            currentTip: currentTip,
+            newTip: newTip
+        });
+        
+        // Debug: Log all FormData entries
+        console.log('Tip update FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log('  ' + key + ' = ' + value);
+        }
+        
+        console.log('About to make fetch request to:', getContextPath() + '/CustomerServlet');
+        
+        fetch(getContextPath() + '/CustomerServlet', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('Tip update response status:', response.status);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Tip update response text:', text);
+            
+            if (text.trim().startsWith('<')) {
+                console.error('Server returned HTML instead of JSON');
+                alert('Server error occurred. Please check server logs.');
+                return;
             }
             
-            // Initialize autocomplete for pickup location
-            updatePickupAutocomplete = new google.maps.places.Autocomplete(updatePickupInput, {
-                types: ['establishment', 'geocode']
-            });
-            updatePickupAutocomplete.addListener('place_changed', function() {
-                const place = updatePickupAutocomplete.getPlace();
-                console.log('Pickup place_changed event triggered');
-                console.log('Place object:', place);
-                if (place.geometry) {
-                    const lat = place.geometry.location.lat();
-                    const lng = place.geometry.location.lng();
-                    document.getElementById('update-pickup-lat').value = lat;
-                    document.getElementById('update-pickup-lng').value = lng;
-                    console.log('Pickup location updated - Lat:', lat, 'Lng:', lng, 'Address:', place.formatted_address);
+            try {
+                var data = JSON.parse(text);
+                console.log('Parsed tip update response:', data);
+                
+                if (data.success) {
+                    alert('Tip updated successfully! New tip amount: LKR ' + newTip.toFixed(2));
+                    toggleTipUpdateForm(); // Hide the form
+                    // Refresh the page to show updated data
+                    location.reload();
                 } else {
-                    console.log('No geometry found for pickup place');
+                    console.error('Server error:', data.error);
+                    alert('Error: ' + (data.error || 'Failed to update tip'));
                 }
-            });
-            
-            // Initialize autocomplete for dropoff location
-            updateDropoffAutocomplete = new google.maps.places.Autocomplete(updateDropoffInput, {
-                types: ['establishment', 'geocode']
-            });
-            updateDropoffAutocomplete.addListener('place_changed', function() {
-                const place = updateDropoffAutocomplete.getPlace();
-                console.log('Dropoff place_changed event triggered');
-                console.log('Dropoff Place object:', place);
-                console.log('Dropoff place.geometry:', place.geometry);
-                if (place.geometry) {
-                    const lat = place.geometry.location.lat();
-                    const lng = place.geometry.location.lng();
-                    const latElement = document.getElementById('update-dropoff-lat');
-                    const lngElement = document.getElementById('update-dropoff-lng');
-                    console.log('Dropoff elements found:', latElement, lngElement);
-                    if (latElement && lngElement) {
-                        latElement.value = lat;
-                        lngElement.value = lng;
-                        console.log('Dropoff location updated - Lat:', lat, 'Lng:', lng, 'Address:', place.formatted_address);
-                        console.log('Dropoff element values after setting:', latElement.value, lngElement.value);
-                    } else {
-                        console.log('Dropoff elements not found!');
-                    }
-                } else {
-                    console.log('No geometry found for dropoff place');
-                }
-            });
-            
-            console.log('Google Places Autocomplete initialized for update form');
-        } else {
-            console.log('Update form inputs not found');
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Response text:', text);
+                alert('Error parsing server response. Check console for details.\n\nResponse: ' + text.substring(0, 200));
+            }
+        })
+        .catch(function(error) {
+            console.error('Fetch error:', error);
+            alert('An error occurred while updating the tip: ' + error.message);
+        });
+    }
+    
+    // Test function to debug tip update
+    function testTipUpdate() {
+        console.log('=== TEST TIP UPDATE ===');
+        console.log('Current trip data:', currentTripData);
+        
+        if (!currentTripData || !currentTripData.trip) {
+            alert('No trip data available for testing');
+            return;
         }
+        
+        var tripId = currentTripData.trip.TripID || currentTripData.trip.tripId;
+        var testTip = 100.00; // Fixed test value
+        
+        console.log('Test parameters:');
+        console.log('  tripId:', tripId);
+        console.log('  testTip:', testTip);
+        
+        // Test getContextPath function
+        var contextPath = getContextPath();
+        console.log('Context path:', contextPath);
+        
+        // Create simple FormData
+        var formData = new FormData();
+        formData.append('action', 'updateTip');
+        formData.append('tripId', tripId);
+        formData.append('newTip', testTip);
+        
+        console.log('Test FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log('  ' + key + ' = ' + value);
+        }
+        
+        var url = contextPath + '/CustomerServlet';
+        console.log('Making test request to:', url);
+        
+        // Test with FormData first
+        console.log('Testing with FormData...');
+        
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log('Test response status:', response.status);
+            console.log('Test response headers:', response.headers);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Test response text:', text);
+            alert('Test completed. Check console for details.');
+        })
+        .catch(error => {
+            console.error('Test error:', error);
+            console.log('FormData failed, trying URLSearchParams...');
+            
+            // Try with URLSearchParams as backup
+            var params = new URLSearchParams();
+            params.append('action', 'updateTip');
+            params.append('tripId', tripId);
+            params.append('newTip', testTip);
+            
+            console.log('URLSearchParams:', params.toString());
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params
+            })
+            .then(response => {
+                console.log('URLSearchParams response status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                console.log('URLSearchParams response text:', text);
+                alert('Backup test completed. Check console for details.');
+            })
+            .catch(error2 => {
+                console.error('URLSearchParams error:', error2);
+                alert('Both tests failed: ' + error2.message);
+            });
+        });
+    }
+    
+    // Simple test function - most basic approach
+    function simpleTest() {
+        console.log('=== SIMPLE TEST ===');
+        
+        // Create a simple form and submit it
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = getContextPath() + '/CustomerServlet';
+        
+        var actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'action';
+        actionInput.value = 'updateTip';
+        form.appendChild(actionInput);
+        
+        var tripIdInput = document.createElement('input');
+        tripIdInput.type = 'hidden';
+        tripIdInput.name = 'tripId';
+        tripIdInput.value = '1'; // Hardcoded for testing
+        form.appendChild(tripIdInput);
+        
+        var tipInput = document.createElement('input');
+        tipInput.type = 'hidden';
+        tipInput.name = 'newTip';
+        tipInput.value = '50.00'; // Hardcoded for testing
+        form.appendChild(tipInput);
+        
+        console.log('Simple test form created');
+        console.log('Action:', actionInput.value);
+        console.log('TripId:', tripIdInput.value);
+        console.log('NewTip:', tipInput.value);
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
+        
+        console.log('Simple test form submitted');
     }
     
     // Enhanced toggleUpdateForm function to initialize autocomplete when form is shown
@@ -1015,7 +1748,6 @@
             
             var trip = currentTripData.trip;
             document.getElementById('update-pickup').value = trip.PickupLocation || trip.pickupLocation || '';
-            document.getElementById('update-dropoff').value = trip.DropOffLocation || trip.dropoffLocation || '';
             
             updateFormSection.classList.remove('hidden');
             updateBtn.innerHTML = '<i class="fas fa-times"></i> Cancel Update';
@@ -1026,11 +1758,21 @@
             setTimeout(function() {
                 console.log('Initializing autocomplete now...');
                 initializeUpdateFormAutocomplete();
+                
+                // Also try to trigger autocomplete manually after a short delay
+                setTimeout(function() {
+                    const pickupInput = document.getElementById('update-pickup');
+                    if (pickupInput && updatePickupAutocomplete) {
+                        console.log('Manually triggering autocomplete focus');
+                        pickupInput.focus();
+                        pickupInput.click();
+                    }
+                }, 500);
             }, 200);
         } else {
             // Hide form
             updateFormSection.classList.add('hidden');
-            updateBtn.innerHTML = '<i class="fas fa-edit"></i> Update Locations';
+            updateBtn.innerHTML = '<i class="fas fa-edit"></i> Update Pickup Location';
             updateBtn.onclick = toggleUpdateForm;
         }
     }
