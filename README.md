@@ -1,4 +1,4 @@
-# PickMeGo - Ride Booking Application
+# PickMeGo - Ride Booking System
 
 A comprehensive ride-booking web application built with Java, featuring real-time driver notifications, vehicle matching, and a complete notification system for managing ride requests.
 
