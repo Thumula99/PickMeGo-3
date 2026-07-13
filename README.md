@@ -174,7 +174,7 @@ mvn test
 - SMS alerts for critical updates
 - Advanced filtering and search capabilities
 - Rating and review system
-- Payment integration
+- Online payment integration
 
 ## 🐛 Troubleshooting
 
